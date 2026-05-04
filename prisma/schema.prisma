@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum MealStatus {
+  PENDING
+  RECORDED
+  SKIPPED
+}
+
+model UserSetting {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guildId         String
+  userId          String
+  notifyChannelId String?
+  timezone        String   @default("Asia/Taipei")
+  enabledDays     Json
+  breakfastTime   String   @default("07:00")
+  lunchTime       String   @default("13:00")
+  dinnerTime      String   @default("20:00")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([guildId, userId])
+}
+
+model MealTask {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guildId    String
+  userId     String
+  date       String
+  type       MealType
+  status     MealStatus
+  title      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  recordedAt DateTime?
+
+  @@unique([guildId, userId, date, type])
+  @@index([date, status])
+}
+
+model DayOverride {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guildId   String
+  userId    String
+  date      String
+  skipped   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, userId, date])
+}
