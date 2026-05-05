@@ -96,3 +96,4 @@ pnpm deploy:commands
 - 重啟時會執行 `recoverTodayMealTasks()`，補回 bot 離線期間已經過觸發時間的餐別。
 - 每分鐘 trigger job 使用 upsert 建立 pending task，不會覆蓋已記錄餐點。
 - 每小時只提醒 `PENDING`，不提醒 `RECORDED` 或 `SKIPPED`。
+- 提醒訊息會附快速記錄按鈕，按下後用表單輸入餐點名稱並直接記錄。

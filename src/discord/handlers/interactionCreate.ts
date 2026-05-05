@@ -1,10 +1,16 @@
-import { Events, type ChatInputCommandInteraction, type Client } from "discord.js";
+import { Events, type ChatInputCommandInteraction, type Client, type RepliableInteraction } from "discord.js";
 import pino from "pino";
 import * as dashboardCommand from "../commands/dashboard.js";
 import * as jumpCommand from "../commands/jump.js";
 import * as recordCommand from "../commands/record.js";
 import * as settingCommand from "../commands/setting.js";
 import * as statusCommand from "../commands/status.js";
+import {
+  handleQuickRecordButton,
+  handleQuickRecordModal,
+  isQuickRecordButton,
+  isQuickRecordModal,
+} from "./quickRecord.js";
 
 const logger = pino({ name: "interactionCreate" });
 
@@ -18,26 +24,44 @@ const commands = new Map<string, { execute: (interaction: ChatInputCommandIntera
 
 export function registerInteractionCreateHandler(client: Client): void {
   client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) {
-      return;
-    }
-
-    const command = commands.get(interaction.commandName);
-    if (!command) {
-      return;
-    }
-
     try {
+      if (interaction.isButton() && isQuickRecordButton(interaction.customId)) {
+        await handleQuickRecordButton(interaction);
+        return;
+      }
+
+      if (interaction.isModalSubmit() && isQuickRecordModal(interaction.customId)) {
+        await handleQuickRecordModal(interaction);
+        return;
+      }
+
+      if (!interaction.isChatInputCommand()) {
+        return;
+      }
+
+      const command = commands.get(interaction.commandName);
+      if (!command) {
+        return;
+      }
+
       await command.execute(interaction);
     } catch (error) {
-      logger.error({ error, commandName: interaction.commandName }, "Command failed");
+      logger.error({ error }, "Interaction failed");
 
-      const message = "操作失敗，請稍後再試。";
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply(message).catch(() => undefined);
-      } else {
-        await interaction.reply({ content: message, ephemeral: true }).catch(() => undefined);
+      if (interaction.isRepliable()) {
+        await replyWithError(interaction);
       }
     }
   });
+}
+
+async function replyWithError(interaction: RepliableInteraction): Promise<void> {
+  const message = "操作失敗，請稍後再試。";
+
+  if (interaction.deferred || interaction.replied) {
+    await interaction.editReply(message).catch(() => undefined);
+    return;
+  }
+
+  await interaction.reply({ content: message, ephemeral: true }).catch(() => undefined);
 }
