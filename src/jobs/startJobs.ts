@@ -4,7 +4,9 @@ import pino from "pino";
 import { env } from "../env.js";
 import { recoverTodayMealTasks } from "./recoverTodayMealTasks.js";
 import { runMealTriggerJob } from "./mealTriggerJob.js";
+import { runHourlyNotificationTasks } from "./hourlyNotificationTasks.js";
 import { runNotifyPendingMealsJob } from "./notifyPendingMealsJob.js";
+import { runWeekendExportReminderJob } from "./weekendExportReminderJob.js";
 
 const logger = pino({ name: "jobs" });
 
@@ -30,11 +32,21 @@ export async function startJobs(client: Client): Promise<void> {
   cron.schedule(
     "0 * * * *",
     async () => {
-      try {
-        await runNotifyPendingMealsJob(client);
-      } catch (error) {
-        logger.error({ error }, "Pending meal notification job failed");
-      }
+      await runHourlyNotificationTasks(
+        [
+          {
+            name: "pending meal notification",
+            run: () => runNotifyPendingMealsJob(client),
+          },
+          {
+            name: "weekend export reminder",
+            run: () => runWeekendExportReminderJob(client),
+          },
+        ],
+        (taskName, error) => {
+          logger.error({ error, taskName }, "Hourly notification task failed");
+        },
+      );
     },
     {
       timezone: env.DEFAULT_TIMEZONE,

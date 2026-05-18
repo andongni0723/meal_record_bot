@@ -11,6 +11,7 @@ import {
   isQuickRecordButton,
   isQuickRecordModal,
 } from "./quickRecord.js";
+import { handleWeekendExportStopButton, isWeekendExportStopButton } from "./weekendExportReminder.js";
 
 const logger = pino({ name: "interactionCreate" });
 
@@ -27,6 +28,11 @@ export function registerInteractionCreateHandler(client: Client): void {
     try {
       if (interaction.isButton() && isQuickRecordButton(interaction.customId)) {
         await handleQuickRecordButton(interaction);
+        return;
+      }
+
+      if (interaction.isButton() && isWeekendExportStopButton(interaction.customId)) {
+        await handleWeekendExportStopButton(interaction);
         return;
       }
 

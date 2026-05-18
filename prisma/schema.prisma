@@ -62,3 +62,15 @@ model DayOverride {
 
   @@unique([guildId, userId, date])
 }
+
+model WeekendExportReminder {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guildId          String
+  userId           String
+  weekendStartDate String
+  stoppedAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([guildId, userId, weekendStartDate])
+}
